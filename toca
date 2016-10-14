@@ -1,0 +1,10 @@
+#!/bin/bash
+source ./toca-functions 
+mode="$1"
+[ -z "$mode" ] && usage && exit
+case $mode in
+  newca)
+    make_new_ca "$2" "$3"
+    ;;
+  esac
+

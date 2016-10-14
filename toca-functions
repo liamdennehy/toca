@@ -1,0 +1,26 @@
+#!/bin/bash
+usage() {
+  echo Usage:
+  }
+
+make_new_root_ca() {
+  id=$$
+  cadir=/tmp/toca/$id
+  CAName=$1
+  [ -z "$CAName" ] && echo "You need to specify a name for the new CA" && return 1
+  [ -z "$2" ] && echo At least one DN parameter needs to be supplied && return 1
+  echo Making new CA
+  echo Shortname: $CAName
+  echo LongName: $CADisplayName
+  mkdir -p $cadir
+  cat conf-templates/root-ca-req > $cadir/rootca.conf
+  echo [ req_dn ] >> $cadir/rootca.conf
+  shift
+  while test ${#} -gt 0; do
+    echo "$1" >> $cadir/rootca.conf
+    shift
+    done
+  openssl req -new -config $cadir/rootca.conf -keyout $cadir/ca.key -out $cadir/ca.req -subj "/O=Liam/CN=Liam Test CA 1"
+  #rm -rf $cadir 
+  }
+
