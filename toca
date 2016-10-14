@@ -1,10 +1,13 @@
 #!/bin/bash
-source ./toca-functions 
-mode="$1"
+bindir=bin
+confdir=conf
+source $conf/toca.conf
+source $bin/toca-functions
 [ -z "$mode" ] && usage && exit
 case $mode in
-  newca)
-    make_new_ca "$2" "$3"
+  newrootca)
+    shift
+    new_root_ca $1 "$2"
     ;;
   esac
 

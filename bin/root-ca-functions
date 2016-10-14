@@ -1,0 +1,34 @@
+#!/bin/bash
+new_root_ca() {
+  id=$$
+  cadir=/tmp/toca/$id
+  CAName=$1
+  [ -z "$CAName" ] && echo "You need to specify a name for the new CA" && return 1
+  [ -z "$2" ] && echo At least one DN parameter needs to be supplied && return 1
+  CADN="$2"
+  CAURL="$3"
+  echo Making new CA
+  echo Shortname: $CAName
+  mkdir -p $cadir
+  cat conf-templates/root-ca-req > $cadir/rootca.conf
+  echo [ req_dn ] >> $cadir/rootca.conf
+  oldIFS=$IFS
+  IFS="/"
+  echo $1
+  set $1
+  IFS=$oldIFS
+  shift
+  echo ${#} Parameters
+  while test ${#} -gt 0; do
+    pname=$(echo $1|cut -d'=' -f1)
+    p=$(echo "$1"|cut -d'=' -f2-)
+    echo $pname=\"$p\" |tee -a $cadir/rootca.conf
+    shift
+    done
+  openssl genrsa -out $cadir/ca.key 2048
+#  openssl genrsa -out $cadir/ca.key $rootcakl
+  openssl req -new -config $cadir/rootca.conf -key $cadir/ca.key -out $cadir/ca.req
+  openssl req -subject -noout -in $cadir/ca.req
+  #rm -rf $cadir 
+  }
+
