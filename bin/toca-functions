@@ -1,6 +1,6 @@
 #!/bin/bash
-source root-ca-functions
-source issuing-ca-functionsmode="$1"
+source $bindir/root-ca-functions
+source $bindir/issuing-ca-functions
 
 usage() {
   echo Usage:

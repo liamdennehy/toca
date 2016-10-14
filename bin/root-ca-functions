@@ -10,25 +10,39 @@ new_root_ca() {
   echo Making new CA
   echo Shortname: $CAName
   mkdir -p $cadir
-  cat conf-templates/root-ca-req > $cadir/rootca.conf
-  echo [ req_dn ] >> $cadir/rootca.conf
+  touch $cadir/$CAName.db $cadir/$CAName.db.attr
+  #echo 1 > $cadir/$CAName.crl.srl
+  echo "[ default ]" >> $cadir/$CAName.conf
+  echo "ca = $CAName" >> $cadir/$CAName.conf
+  cat conf-templates/root-ca-req >> $cadir/$CAName.conf
+  echo "[ req_dn ]" >> $cadir/$CAName.conf
   oldIFS=$IFS
   IFS="/"
-  echo $1
-  set $1
+  echo $CADN
+  set $CADN
   IFS=$oldIFS
   shift
   echo ${#} Parameters
   while test ${#} -gt 0; do
     pname=$(echo $1|cut -d'=' -f1)
     p=$(echo "$1"|cut -d'=' -f2-)
-    echo $pname=\"$p\" |tee -a $cadir/rootca.conf
+    echo "$pname=\"$p\"" |tee -a $cadir/$CAName.conf
     shift
     done
-  openssl genrsa -out $cadir/ca.key 2048
-#  openssl genrsa -out $cadir/ca.key $rootcakl
-  openssl req -new -config $cadir/rootca.conf -key $cadir/ca.key -out $cadir/ca.req
-  openssl req -subject -noout -in $cadir/ca.req
+  echo "[ ca-$CAName ]" >> $cadir/$CAName.conf
+  echo "dir = $cadir" >> $cadir/$CAName.conf
+  cat conf-templates/root-ca-conf >> $cadir/$CAName.conf
+  echo openssl genrsa -out $cadir/$CAName.key 2048
+  openssl genrsa -out $cadir/$CAName.key 2048
+  echo openssl req -new -config $cadir/$CAName.conf -key $cadir/$CAName.key -out $cadir/$CAName.req
+  openssl req -new -config $cadir/$CAName.conf -key $cadir/$CAName.key -out $cadir/$CAName.req
+  casrl=$(echo "insert into cas (caname) values (\"$CAName\"); select caid from cas where caname=\"$CAName\";" | sqlite3 $db)
+  echo openssl req -subject -noout -in $cadir/$CAName.req
+  openssl req -subject -noout -in $cadir/$CAName.req
+  [ $casrl -lt 10 ] && casrl=0$casrl
+  echo $casrl > $cadir/$CAName.crt.srl
+  echo openssl ca -batch -selfsign -config $cadir/$CAName.conf -in $cadir/$CAName.req -out $cadir/$CAName.crt -days $rootcadays -name ca-$CAName
+  openssl ca -batch -selfsign -config $cadir/$CAName.conf -in $cadir/$CAName.req -out $cadir/$CAName.crt -days $rootcadays -name ca-$CAName
   #rm -rf $cadir 
   }
 

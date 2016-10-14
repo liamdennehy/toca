@@ -1,8 +1,11 @@
 #!/bin/bash
 bindir=bin
 confdir=conf
-source $conf/toca.conf
-source $bin/toca-functions
+source $confdir/toca.conf
+source $bindir/toca-functions
+
+mode="$1"
+
 [ -z "$mode" ] && usage && exit
 case $mode in
   newrootca)

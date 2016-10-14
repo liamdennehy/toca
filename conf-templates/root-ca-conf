@@ -1,19 +1,26 @@
-certificate             = $dir/ca/$ca.crt       # The CA cert
-private_key             = $dir/ca/$ca/private/$ca.key # CA private key
-new_certs_dir           = $dir/ca/$ca           # Certificate archive
-serial                  = $dir/ca/$ca/db/$ca.crt.srl # Serial number file
-crlnumber               = $dir/ca/$ca/db/$ca.crl.srl # CRL number file
-database                = $dir/ca/$ca/db/$ca.db # Index file
+certificate             = $dir/$ca.crt       # The CA cert
+private_key             = $dir/$ca.key # CA private key
+new_certs_dir           = $dir           # Certificate archive
+serial                  = $dir/$ca.crt.srl # Serial number file
+crlnumber               = $dir/$ca.crl.srl # CRL number file
+database                = $dir/$ca.db # Index file
 unique_subject          = no                    # Require unique subject
 default_days            = 3652                  # How long to certify for
 default_md              = sha256                # MD to use
 policy                  = match_pol             # Default naming policy
 email_in_dn             = no                    # Add email to cert DN
 preserve                = no                    # Keep passed DN ordering
-name_opt                = $name_opt             # Subject DN display options
+name_opt                = multiline,-esc_msb,utf8 # Display UTF-8 characters
 #cert_opt                = ca_default            # Certificate display options
 copy_extensions         = none                  # Copy extensions from CSR
 #x509_extensions         = signing_ca_ext        # Default cert extensions
-default_crl_days        = 365                   # How long before next CRL
+default_crl_days        = 7                  # How long before next CRL
 #crl_extensions          = crl_ext               # CRL extensions
 
+[ match_pol ]
+countryName             = optional                 # Must match 'NO'
+stateOrProvinceName     = optional              # Included if present
+localityName            = optional              # Included if present
+organizationName        = optional                 # Must match 'Green AS'
+organizationalUnitName  = optional              # Included if present
+commonName              = supplied              # Must be present
