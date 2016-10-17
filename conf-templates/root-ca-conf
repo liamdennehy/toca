@@ -1,5 +1,5 @@
 certificate             = $dir/$ca.crt       # The CA cert
-private_key             = $dir/$ca.key # CA private key
+#private_key             = $dir/$ca.key # CA private key
 new_certs_dir           = $dir           # Certificate archive
 serial                  = $dir/$ca.crt.srl # Serial number file
 crlnumber               = $dir/$ca.crl.srl # CRL number file

@@ -3,7 +3,7 @@ bindir=bin
 confdir=conf
 source $confdir/toca.conf
 source $bindir/toca-functions
-
+mkdir -p $certdir $keydir
 mode="$1"
 
 [ -z "$mode" ] && usage && exit

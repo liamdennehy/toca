@@ -1,48 +1,47 @@
 #!/bin/bash
 new_root_ca() {
   id=$$
-  cadir=/tmp/toca/$id
+  workdir=/tmp/toca/$id
   CAName=$1
   [ -z "$CAName" ] && echo "You need to specify a name for the new CA" && return 1
   [ -z "$2" ] && echo At least one DN parameter needs to be supplied && return 1
   CADN="$2"
   CAURL="$3"
+  cacount=$(echo "select count(*) from cas where caname='$CAName';" | sqlite3 cadb)
+  [ $cacount -gt 0 ] && echo Already a CAN with shortname $CAName && return 2
   echo Making new CA
   echo Shortname: $CAName
-  mkdir -p $cadir
-  touch $cadir/$CAName.db $cadir/$CAName.db.attr
-  #echo 1 > $cadir/$CAName.crl.srl
-  echo "[ default ]" >> $cadir/$CAName.conf
-  echo "ca = $CAName" >> $cadir/$CAName.conf
-  cat conf-templates/root-ca-req >> $cadir/$CAName.conf
-  echo "[ req_dn ]" >> $cadir/$CAName.conf
+  mkdir -p $workdir
+  touch $workdir/$CAName.db $workdir/$CAName.db.attr
+  #echo 1 > $workdir/$CAName.crl.srl
+  echo "[ default ]" >> $workdir/$CAName.conf
+  echo "ca = $CAName" >> $workdir/$CAName.conf
+  cat conf-templates/root-ca-req >> $workdir/$CAName.conf
+  echo "[ req_dn ]" >> $workdir/$CAName.conf
   oldIFS=$IFS
-  IFS="/"
-  echo $CADN
-  set $CADN
-  IFS=$oldIFS
-  shift
-  echo ${#} Parameters
-  while test ${#} -gt 0; do
-    pname=$(echo $1|cut -d'=' -f1)
-    p=$(echo "$1"|cut -d'=' -f2-)
-    echo "$pname=\"$p\"" |tee -a $cadir/$CAName.conf
-    shift
-    done
-  echo "[ ca-$CAName ]" >> $cadir/$CAName.conf
-  echo "dir = $cadir" >> $cadir/$CAName.conf
-  cat conf-templates/root-ca-conf >> $cadir/$CAName.conf
-  echo openssl genrsa -out $cadir/$CAName.key 2048
-  openssl genrsa -out $cadir/$CAName.key 2048
-  echo openssl req -new -config $cadir/$CAName.conf -key $cadir/$CAName.key -out $cadir/$CAName.req
-  openssl req -new -config $cadir/$CAName.conf -key $cadir/$CAName.key -out $cadir/$CAName.req
-  casrl=$(echo "insert into cas (caname) values (\"$CAName\"); select caid from cas where caname=\"$CAName\";" | sqlite3 $db)
-  echo openssl req -subject -noout -in $cadir/$CAName.req
-  openssl req -subject -noout -in $cadir/$CAName.req
-  [ $casrl -lt 10 ] && casrl=0$casrl
-  echo $casrl > $cadir/$CAName.crt.srl
-  echo openssl ca -batch -selfsign -config $cadir/$CAName.conf -in $cadir/$CAName.req -out $cadir/$CAName.crt -days $rootcadays -name ca-$CAName
-  openssl ca -batch -selfsign -config $cadir/$CAName.conf -in $cadir/$CAName.req -out $cadir/$CAName.crt -days $rootcadays -name ca-$CAName
-  #rm -rf $cadir 
+  make_dn_section $CADN |tee -a $workdir/$CAName.conf
+  echo "[ ca-$CAName ]" >> $workdir/$CAName.conf
+  echo "dir = $workdir" >> $workdir/$CAName.conf
+  cat conf-templates/root-ca-conf >> $workdir/$CAName.conf
+  echo Generating $rootcakl-bit key
+  keyid=$(genrsa 2048)
+  echo Key ID: $keyid
+  echo Creating Root CA Request
+  openssl req -new -config $workdir/$CAName.conf -key $keydir/$keyid.key -out $workdir/$CAName.req
+  reqhash=$(cat $workdir/$CAName.req | sha256sum | cut -d' ' -f1)
+  caid=$(echo "insert into cas (caname) values ('$CAName'); select caid from cas where caname='$CAName';" | sqlite3 $db)
+  certid=$(echo "insert into certs (hash, caid) values ('$reqhash',$caid); select certid from certs where hash='$reqhash';" | sqlite3 cadb)
+  echo Recorded Root CA as serial $certid
+  #openssl req -subject -noout -in $workdir/$CAName.req
+  [ $certid -lt 10 ] && certid=0$certid
+  echo $certid > $workdir/$CAName.crt.srl
+  echo Signing CA $CAName
+  openssl ca -batch -selfsign -config $workdir/$CAName.conf -keyfile $keydir/$keyid.key -in $workdir/$CAName.req -out $workdir/$CAName.crt -days $rootcadays -name ca-$CAName # 2> /dev/null
+  caid=$(echo "update cas set parentca=caid where caname='$CAName'; select caid from cas where caname='$CAName';" | sqlite3 $db)
+  echo Record Certificate Details
+  crthash=$(openssl x509 -in $workdir/$CAName.crt -outform DER | sha256sum | cut -d' ' -f1) 
+  certid=$(echo "insert into certs (hash, caid) values ('$crthash',$caid); select certid from certs where hash='$crthash';" | sqlite3 $db)
+  dbcmd "update cas set keyid=$keyid where caname='$CAName';"
+  #rm -rf $workdir 
   }
 

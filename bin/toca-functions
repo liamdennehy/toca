@@ -6,4 +6,28 @@ usage() {
   echo Usage:
   }
 
+genrsa() {
+  key="$(openssl genrsa $1)"
+  keysha=$(echo "$key" | sha256sum |cut -d' ' -f1)
+  echo $keysha $db >&2
+  keyid=$(echo "insert into keys (hash) values ('$keysha'); select rowid from keys where hash='$keysha';" | sqlite3 $db)
+  echo "$key" > $keydir/$keyid.key
+  echo $keyid	
+  }
 
+make_dn_section() {
+  IFS="/"
+  set $1
+  shift
+  # echo ${#} Parameters
+  while test ${#} -gt 0; do
+    pname=$(echo $1|cut -d'=' -f1)
+    p=$(echo "$1"|cut -d'=' -f2-)
+    echo "$pname=\"$p\""
+    shift
+    done
+  }
+
+dbcmd() {
+  echo "$1" | sqlite3 $db
+  }

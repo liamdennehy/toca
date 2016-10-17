@@ -1,4 +1,5 @@
-create table cas (caid integer primary key autoincrement, caname varchar(255) unique not null, parentca unsigned int);
+create table keys (hash char(32) not null);
+create table cas (caid integer primary key autoincrement, caname varchar(255) unique not null, parentca unsigned int, keyid unsigned int);
 create table crls (crlid integer primary key autoincrement, hash char(32), caid unsigned int);
 create table reqs (reqid integer primary key autoincrement, hash char(32));
 create table certs (certid integer primary key autoincrement, hash char(32), caid unsigned int);
